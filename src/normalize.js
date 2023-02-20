@@ -1,12 +1,6 @@
-"use strict";
+import _ from "lodash";
+import { getContentTypeSchema, makeParentNodeName } from "./helpers";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-exports.__esModule = true;
-exports.createNodes = void 0;
-var _get2 = _interopRequireDefault(require("lodash/get"));
-var _toUpper2 = _interopRequireDefault(require("lodash/toUpper"));
-var _isPlainObject2 = _interopRequireDefault(require("lodash/isPlainObject"));
-var _helpers = require("./helpers");
 /**
  * Create a child node for json fields
  * @param {Object} json value
@@ -14,29 +8,25 @@ var _helpers = require("./helpers");
  * @returns {Object} gatsby node
  */
 const prepareJSONNode = (json, context) => {
-  const {
-    createContentDigest,
-    createNodeId,
-    parentNode,
-    attributeName
-  } = context;
-  const jsonNodeId = createNodeId(`${parentNode.strapi_id}-${parentNode.internal.type}-${attributeName}-JSONNode`);
+  const { createContentDigest, createNodeId, parentNode, attributeName } = context;
+
+  const jsonNodeId = createNodeId(
+    `${parentNode.strapi_id}-${parentNode.internal.type}-${attributeName}-JSONNode`
+  );
+
   const JSONNode = {
-    ...((0, _isPlainObject2.default)(json) ? {
-      ...json
-    } : {
-      strapi_json_value: json
-    }),
+    ...(_.isPlainObject(json) ? { ...json } : { strapi_json_value: json }),
     id: jsonNodeId,
     parent: parentNode.id,
     children: [],
     internal: {
-      type: (0, _toUpper2.default)(`${parentNode.internal.type}_${attributeName}_JSONNode`),
+      type: _.toUpper(`${parentNode.internal.type}_${attributeName}_JSONNode`),
       mediaType: `application/json`,
       content: JSON.stringify(json),
-      contentDigest: createContentDigest(json)
-    }
+      contentDigest: createContentDigest(json),
+    },
   };
+
   return JSONNode;
 };
 
@@ -47,21 +37,16 @@ const prepareJSONNode = (json, context) => {
  * @returns {Object} gatsby node
  */
 const prepareRelationNode = (relation, context) => {
-  const {
-    schemas,
-    createNodeId,
-    createContentDigest,
-    parentNode,
-    targetSchemaUid
-  } = context;
+  const { schemas, createNodeId, createContentDigest, parentNode, targetSchemaUid } = context;
 
   // const targetSchema = getContentTypeSchema(schemas, targetSchemaUid);
   // const {
   //   schema: { singularName },
   // } = targetSchema;
 
-  const nodeType = (0, _helpers.makeParentNodeName)(schemas, targetSchemaUid);
+  const nodeType = makeParentNodeName(schemas, targetSchemaUid);
   const relationNodeId = createNodeId(`${nodeType}-${relation.id}`);
+
   const node = {
     ...relation,
     id: relationNodeId,
@@ -71,9 +56,10 @@ const prepareRelationNode = (relation, context) => {
     internal: {
       type: nodeType,
       content: JSON.stringify(relation),
-      contentDigest: createContentDigest(relation)
-    }
+      contentDigest: createContentDigest(relation),
+    },
   };
+
   return node;
 };
 
@@ -84,25 +70,24 @@ const prepareRelationNode = (relation, context) => {
  * @returns {Object} gatsby node
  */
 const prepareTextNode = (text, context) => {
-  const {
-    createContentDigest,
-    createNodeId,
-    parentNode,
-    attributeName
-  } = context;
-  const textNodeId = createNodeId(`${parentNode.strapi_id}-${parentNode.internal.type}-${attributeName}-TextNode`);
+  const { createContentDigest, createNodeId, parentNode, attributeName } = context;
+  const textNodeId = createNodeId(
+    `${parentNode.strapi_id}-${parentNode.internal.type}-${attributeName}-TextNode`
+  );
+
   const textNode = {
     id: textNodeId,
     parent: parentNode.id,
     children: [],
     [attributeName]: text,
     internal: {
-      type: (0, _toUpper2.default)(`${parentNode.internal.type}_${attributeName}_TextNode`),
+      type: _.toUpper(`${parentNode.internal.type}_${attributeName}_TextNode`),
       mediaType: `text/markdown`,
       content: text,
-      contentDigest: createContentDigest(text)
-    }
+      contentDigest: createContentDigest(text),
+    },
   };
+
   return textNode;
 };
 
@@ -113,13 +98,11 @@ const prepareTextNode = (text, context) => {
  * @returns {Object} gatsby node
  */
 const prepareMediaNode = (media, context) => {
-  const {
-    createNodeId,
-    createContentDigest,
-    parentNode
-  } = context;
+  const { createNodeId, createContentDigest, parentNode } = context;
+
   const nodeType = "STRAPI__MEDIA";
   const relationNodeId = createNodeId(`${nodeType}-${media.id}`);
+
   const node = {
     ...media,
     id: relationNodeId,
@@ -129,9 +112,10 @@ const prepareMediaNode = (media, context) => {
     internal: {
       type: nodeType,
       content: JSON.stringify(media),
-      contentDigest: createContentDigest(media)
-    }
+      contentDigest: createContentDigest(media),
+    },
   };
+
   return node;
 };
 
@@ -143,15 +127,12 @@ const prepareMediaNode = (media, context) => {
  * @param {String} uid the main schema uid
  * @returns {Object[]} array of nodes to create
  */
-const createNodes = (entity, context, uid) => {
+export const createNodes = (entity, context, uid) => {
   const nodes = [];
-  const {
-    schemas,
-    createNodeId,
-    createContentDigest,
-    getNode
-  } = context;
-  const nodeType = (0, _helpers.makeParentNodeName)(schemas, uid);
+
+  const { schemas, createNodeId, createContentDigest, getNode } = context;
+  const nodeType = makeParentNodeName(schemas, uid);
+
   let entryNode = {
     id: createNodeId(`${nodeType}-${entity.id}`),
     strapi_id: entity.id,
@@ -160,32 +141,42 @@ const createNodes = (entity, context, uid) => {
     internal: {
       type: nodeType,
       content: JSON.stringify(entity),
-      contentDigest: createContentDigest(entity)
-    }
+      contentDigest: createContentDigest(entity),
+    },
   };
-  const schema = (0, _helpers.getContentTypeSchema)(schemas, uid);
+
+  const schema = getContentTypeSchema(schemas, uid);
+
   for (const attributeName of Object.keys(entity)) {
     const value = entity[attributeName];
+
     const attribute = schema.schema.attributes[attributeName];
-    const type = (0, _get2.default)(attribute, "type");
+    const type = _.get(attribute, "type");
+
     if (value) {
       // Add support for dynamic zones
       if (type === "dynamiczone") {
         for (const v of value) {
-          const componentNodeName = (0, _helpers.makeParentNodeName)(schemas, v.strapi_component);
+          const componentNodeName = makeParentNodeName(schemas, v.strapi_component);
+
           const valueNodes = createNodes(v, context, v.strapi_component).flat();
-          const compoNodeIds = valueNodes.filter(({
-            internal
-          }) => internal.type === componentNodeName).map(({
-            id
-          }) => id);
-          entity[`${attributeName}___NODE`] = [...(entity[`${attributeName}___NODE`] || []), ...compoNodeIds];
+          const compoNodeIds = valueNodes
+            .filter(({ internal }) => internal.type === componentNodeName)
+            .map(({ id }) => id);
+
+          entity[`${attributeName}___NODE`] = [
+            ...(entity[`${attributeName}___NODE`] || []),
+            ...compoNodeIds,
+          ];
+
           for (const n of valueNodes) {
             nodes.push(n);
           }
         }
+
         delete entity[attributeName];
       }
+
       if (type === "relation") {
         // Create type for the first level of relations, otherwise the user should fetch the other content type
         // to link them
@@ -195,13 +186,13 @@ const createNodes = (entity, context, uid) => {
           createNodeId,
           parentNode: entryNode,
           attributeName,
-          targetSchemaUid: attribute.target
+          targetSchemaUid: attribute.target,
         };
+
         if (Array.isArray(value)) {
-          const relationNodes = value.map(relation => prepareRelationNode(relation, config));
-          entity[`${attributeName}___NODE`] = relationNodes.map(({
-            id
-          }) => id);
+          const relationNodes = value.map((relation) => prepareRelationNode(relation, config));
+          entity[`${attributeName}___NODE`] = relationNodes.map(({ id }) => id);
+
           for (const node of relationNodes) {
             if (!getNode(node.id)) {
               nodes.push(node);
@@ -209,8 +200,11 @@ const createNodes = (entity, context, uid) => {
           }
         } else {
           const relationNode = prepareRelationNode(value, config);
+
           entity[`${attributeName}___NODE`] = relationNode.id;
+
           const relationNodeToCreate = getNode(relationNode.id);
+
           if (!relationNodeToCreate) {
             nodes.push(relationNode);
           }
@@ -220,30 +214,32 @@ const createNodes = (entity, context, uid) => {
 
       // Apply transformations to components: markdown, json...
       if (type === "component") {
-        const componentSchema = (0, _helpers.getContentTypeSchema)(schemas, attribute.component);
-        const componentNodeName = (0, _helpers.makeParentNodeName)(schemas, componentSchema.uid);
+        const componentSchema = getContentTypeSchema(schemas, attribute.component);
+        const componentNodeName = makeParentNodeName(schemas, componentSchema.uid);
+
         if (attribute.repeatable) {
-          const compoNodes = value.flatMap(v => createNodes(v, context, attribute.component));
+          const compoNodes = value.flatMap((v) => createNodes(v, context, attribute.component));
 
           // Just link the component nodes and not the components' children one
-          entity[`${attributeName}___NODE`] = compoNodes.filter(({
-            internal
-          }) => internal.type === componentNodeName).map(({
-            id
-          }) => id);
+          entity[`${attributeName}___NODE`] = compoNodes
+            .filter(({ internal }) => internal.type === componentNodeName)
+            .map(({ id }) => id);
+
           for (const node of compoNodes) {
             nodes.push(node);
           }
         } else {
           const compoNodes = createNodes(value, context, attribute.component).flat();
           // Just link the component node and not the component's children one
-          entity[`${attributeName}___NODE`] = compoNodes.find(({
-            internal
-          }) => internal.type === componentNodeName).id;
+          entity[`${attributeName}___NODE`] = compoNodes.find(
+            ({ internal }) => internal.type === componentNodeName
+          ).id;
+
           for (const node of compoNodes) {
             nodes.push(node);
           }
         }
+
         delete entity[attributeName];
       }
 
@@ -253,10 +249,13 @@ const createNodes = (entity, context, uid) => {
           createContentDigest,
           createNodeId,
           parentNode: entryNode,
-          attributeName
+          attributeName,
         });
+
         entity[attributeName][`data___NODE`] = textNode.id;
+
         delete entity[attributeName].data;
+
         nodes.push(textNode);
       }
 
@@ -267,25 +266,29 @@ const createNodes = (entity, context, uid) => {
           createContentDigest,
           createNodeId,
           parentNode: entryNode,
-          attributeName
+          attributeName,
         });
+
         entryNode.children = [...entryNode.children, JSONNode.id];
+
         entity[`${attributeName}___NODE`] = JSONNode.id;
         // Resolve only the attributeName___NODE and not to both ones
         delete entity[attributeName];
+
         nodes.push(JSONNode);
       }
+
       if (type == "media") {
         const config = {
           createContentDigest,
           createNodeId,
-          parentNode: entryNode
+          parentNode: entryNode,
         };
+
         if (Array.isArray(value)) {
-          const mediaNodes = value.map(relation => prepareMediaNode(relation, config));
-          entity[`${attributeName}___NODE`] = mediaNodes.map(({
-            id
-          }) => id);
+          const mediaNodes = value.map((relation) => prepareMediaNode(relation, config));
+          entity[`${attributeName}___NODE`] = mediaNodes.map(({ id }) => id);
+
           for (const node of mediaNodes) {
             if (!getNode(node.id)) {
               nodes.push(node);
@@ -293,8 +296,11 @@ const createNodes = (entity, context, uid) => {
           }
         } else {
           const mediaNode = prepareMediaNode(value, config);
+
           entity[`${attributeName}___NODE`] = mediaNode.id;
+
           const relationNodeToCreate = getNode(mediaNode.id);
+
           if (!relationNodeToCreate) {
             nodes.push(mediaNode);
           }
@@ -304,11 +310,13 @@ const createNodes = (entity, context, uid) => {
       }
     }
   }
+
   entryNode = {
     ...entity,
-    ...entryNode
+    ...entryNode,
   };
+
   nodes.push(entryNode);
+
   return nodes;
 };
-exports.createNodes = createNodes;
